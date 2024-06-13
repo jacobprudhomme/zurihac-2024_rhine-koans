@@ -55,7 +55,8 @@ printMessage =
 mainComponent :: ClSF IO EverySecond () ()
 -- Can you fill in the two components from above,
 -- one to the right and one to the left of the composition operator?
-mainComponent = _ >-> _
+-- mainComponent = _ >-> _
+mainComponent = produceMessage >-> printMessage
 
 main :: IO ()
 main = flow $ mainComponent @@ everySecond
