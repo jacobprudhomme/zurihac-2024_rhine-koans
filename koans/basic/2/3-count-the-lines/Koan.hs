@@ -23,4 +23,5 @@ printLineCount = lineCount >-> arrMCl print
 
 main :: IO ()
 -- Recap: Do you remember how to make a 'Rhine' from a 'ClSF'?
-main = flow _
+-- main = flow _
+main = flow $ printLineCount @@ StdinClock
