@@ -16,19 +16,35 @@ import FRP.Rhine hiding (currentInput)
 
 -- | Count the number of lines, words and chars.
 allCounts :: ClSF IO StdinClock () (Int, Int, Int)
-allCounts = _
+-- allCounts = _
+allCounts = proc () -> do
+  userInput <- tagS -< ()
+
+  let wordCount = length $ Text.words userInput
+      charCount = Text.length userInput + 1
+
+  lineCount <- count @Int -< ()
+  totalWordCount <- sumN -< wordCount
+  totalCharCount <- sumN -< charCount
+
+  returnA -< (lineCount, totalWordCount, totalCharCount)
 
 -- | Print the three counts.
 printCounts :: ClSF IO StdinClock (Int, Int, Int) ()
 printCounts = proc (lineCount, totalWordCount, totalCharCount) -> do
-  _ -< _
+  -- _ -< _
+  arrMCl print -< lineCount
+  arrMCl print -< totalWordCount
+  arrMCl print -< totalCharCount
 
 -- | On every 1000th line, print the number of total lines, words and characters so far.
 printAllCounts :: ClSF IO StdinClock () ()
 printAllCounts = proc () -> do
-  counts@(lineCount, _, _) <- _ -< ()
+  -- counts@(lineCount, _, _) <- _ -< ()
+  counts@(lineCount, _, _) <- allCounts -< ()
   if lineCount `mod` 1000 == 0
-    then _ -< counts
+    -- then _ -< counts
+    then printCounts -< counts
     else returnA -< ()
 
 -- For reference, here is the previous implementation.
