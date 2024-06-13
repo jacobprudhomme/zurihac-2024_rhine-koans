@@ -1,3 +1,4 @@
+{-# LANGUAGE Arrows #-}
 {-# LANGUAGE CPP #-}
 
 -- Disabling formatter and linter because it would fail on the syntax error otherwise.
@@ -55,7 +56,8 @@ printAllCounts = proc () -> do
   -- If a signal function has trivial output (), the <- is not needed.
   arrMCl print -< lineCount
   arrMCl print -< totalWordCount
-  arrMCl print -< _ -- Which one is missing here?
+  -- arrMCl print -< _ -- Which one is missing here?
+  arrMCl print -< totalCharCount
 
 -- As you've seen, arrow notation introduces two new syntactic constructions,
 -- the proc keyword an the -< operator.
