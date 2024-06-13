@@ -19,7 +19,8 @@ userInput = tagS
 -- | Output the number of words of the line that was just entered.
 wordCount :: ClSF IO StdinClock () Int
 -- Do you remember how to convert a pure function into a ClSF?
-wordCount = userInput >-> _ (Text.words >>> length)
+-- wordCount = userInput >-> _ (Text.words >>> length)
+wordCount = userInput >-> arr (Text.words >>> length)
 
 -- | Print the number of words of the line that was just entered.
 printWordCount :: ClSF IO StdinClock () ()
