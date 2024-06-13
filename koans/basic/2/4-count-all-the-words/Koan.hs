@@ -49,11 +49,13 @@ sumClSF =
     aggregator :: (Num a) => (a, a) -> (a, a)
     aggregator (currentInput, currentSum) =
       let
-        nextSum = _ -- What should be the state after a further line of input has arrived?
+        -- nextSum = _ -- What should be the state after a further line of input has arrived?
+        nextSum = currentSum + currentInput -- What should be the state after a further line of input has arrived?
        in
         -- The missing part is the final output of the signal function.
         -- If we have summed up to a certain number, what should it be?
-        (_, nextSum)
+        -- (_, nextSum)
+        (nextSum, nextSum)
 
 -- | The number of words of input so far.
 totalWordCount :: ClSF IO StdinClock () Int
