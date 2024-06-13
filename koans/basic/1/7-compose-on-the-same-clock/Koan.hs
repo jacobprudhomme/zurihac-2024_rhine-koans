@@ -23,15 +23,18 @@ everySecond :: EverySecond
 everySecond = waitClock
 
 -- | Produce an incomplete message.
-produceMessage :: ClSF IO (Millisecond 2345) () Text
+-- produceMessage :: ClSF IO (Millisecond 2345) () Text
+produceMessage :: ClSF IO (Millisecond 1000) () Text
 produceMessage = arr $ const "Hello Rhine"
 
 -- | Add an exclamation mark ("!") to a Text.
-exclamate :: (Monad m) => ClSF m (Millisecond 3456) Text Text
+-- exclamate :: (Monad m) => ClSF m (Millisecond 3456) Text Text
+exclamate :: (Monad m) => ClSF m (Millisecond 1000) Text Text
 exclamate = arr (<> "!")
 
 -- | Outputs a message every second.
-printMessage :: ClSF IO (Millisecond 4567) Text ()
+-- printMessage :: ClSF IO (Millisecond 4567) Text ()
+printMessage :: ClSF IO (Millisecond 1000) Text ()
 printMessage = arrMCl Text.putStrLn
 
 -- | A complete Rhine program that prints "Hello Rhine!" every second.
