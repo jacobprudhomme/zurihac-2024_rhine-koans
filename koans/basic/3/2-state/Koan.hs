@@ -13,11 +13,11 @@ as well as an intermediate count every 1000 lines.
 module Koan where
 
 -- base
-import Control.Exception qualified as Exception ()
+import Control.Exception qualified as Exception (try)
 
 -- transformers
-import Control.Monad.Trans.Class ()
-import Control.Monad.Trans.State.Strict (StateT (runStateT))
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.State.Strict (StateT (runStateT), get, put)
 
 -- text
 import Data.Text qualified as Text (length, words)
@@ -41,7 +41,8 @@ stdinWithEOF =
   HoistClock
     { unhoistedClock = StdinClock
     , -- Puzzle: Catch the exception, then hoist to both StateT and ExceptT.
-      monadMorphism = _
+      -- monadMorphism = _
+      monadMorphism = ExceptT . lift . Exception.try
       -- Hint: You need the following ingredients: ExceptT, lift, Exception.try
     }
 
@@ -57,7 +58,8 @@ putAllCounts = proc () -> do
   totalWordCount <- sumN -< wordCount
   totalCharCount <- sumN -< charCount
   -- Instead of returning the counts, store them in the StateT monad!
-  _ -< _
+  -- _ -< _
+  arrMCl (lift . put) -< (lineCount, totalWordCount, totalCharCount)
 
 -- | Print the three counts.
 printCounts :: ClSF App StdinWithEOF (Int, Int, Int) ()
@@ -69,7 +71,8 @@ printCounts = proc (lineCount, totalWordCount, totalCharCount) -> do
 -- | On every 1000th line, print the number of total lines, words and characters so far.
 printAllCounts :: ClSF App StdinWithEOF () ()
 printAllCounts = proc () -> do
-  counts@(lineCount, _, _) <- constMCl _ -< ()
+  -- counts@(lineCount, _, _) <- constMCl _ -< ()
+  counts@(lineCount, _, _) <- constMCl (lift get) -< ()
   if lineCount `mod` 1000 == 0
     then printCounts -< counts
     else returnA -< ()
@@ -82,5 +85,6 @@ main = do
         -- Don't worry about the ambiguous type here, it will vanish as soon as you solve the following hole.
         flow $
           -- Something of type ClSF App StdinWithEOF () () should go here, but what?
-          _ @@ stdinWithEOF
+          -- _ @@ stdinWithEOF
+          putAllCounts >-> printAllCounts @@ stdinWithEOF
   putStrLn $ "The following output: " ++ show result
