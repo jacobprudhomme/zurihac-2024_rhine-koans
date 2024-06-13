@@ -59,9 +59,11 @@ stdinWithEOF =
   -- LiftClock is in fact a type synonym for HoistClock,
   -- which hoists a clock from one monad to another, using any monad morphism (not just lift).
   HoistClock
-    { unhoistedClock = _
+    -- { unhoistedClock = _
+    { unhoistedClock = StdinClock
     , -- Your goal is to first catch the IOError, and then wrap it in the ExceptT transformer.
-      monadMorphism = _
+      -- monadMorphism = _
+      monadMorphism = ExceptT . Exception.try
       -- Hint 1: Have a look at https://hackage.haskell.org/package/base/docs/Control-Exception-Base.html#v:try
       -- Hint 2: Have a look at https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-Except.html
     }
@@ -98,5 +100,6 @@ main :: IO ()
 main = do
   -- The type is ambiguous because GHC cannot infer what e is.
   -- Give it a type signature to help it!
-  Left e <- runExceptT $ flow $ printAllCounts @@ stdinWithEOF
+  -- Left e <- runExceptT $ flow $ printAllCounts @@ stdinWithEOF
+  Left (e :: IOError) <- runExceptT $ flow $ printAllCounts @@ stdinWithEOF
   putStrLn $ "The following error occurred: " ++ show e
