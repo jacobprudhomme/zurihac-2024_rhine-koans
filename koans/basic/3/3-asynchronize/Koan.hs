@@ -75,13 +75,17 @@ allCounts = proc () -> do
   userInput <- tagS -< ()
 
   -- Caution: In AccumT, we only add increments to the state, we don't set the whole state.
-  let nChars = _
-      nWords = _
-      nLines = _
+  -- let nChars = _
+  --     nWords = _
+  --     nLines = _
+  let nChars = Text.length userInput + 1
+      nWords = length $ Text.words userInput
+      nLines = 1
 
   -- Have a look at https://hackage.haskell.org/package/transformers-0.6.1.0/docs/Control-Monad-Trans-Accum.html#g:3
   -- which operation is used to add an increment to the state.
-  arrMCl $ lift . _
+  -- arrMCl $ lift . _
+  arrMCl $ lift . add
     -<
       WordCount
         { nLines
@@ -96,13 +100,17 @@ printCounts = proc () -> do
   -- These are part of the TimeInfo which is always available in a ClSF.
   -- See https://hackage.haskell.org/package/rhine/docs/FRP-Rhine-Clock.html#t:TimeInfo for details.
   -- Can you match on the corresponding record fields and print them?
-  TimeInfo {} <- timeInfo -< ()
-  arrMCl $ liftIO . print -< _
-  arrMCl $ liftIO . print -< _
+  -- TimeInfo {} <- timeInfo -< ()
+  -- arrMCl $ liftIO . print -< _
+  -- arrMCl $ liftIO . print -< _
+  TimeInfo {absolute, sinceInit} <- timeInfo -< ()
+  arrMCl $ liftIO . print -< absolute
+  arrMCl $ liftIO . print -< sinceInit
 
   -- Have a look at https://hackage.haskell.org/package/transformers-0.6.1.0/docs/Control-Monad-Trans-Accum.html#g:3
   -- which operation is used to look up the current state.
-  counts <- constMCl $ lift _ -< ()
+  -- counts <- constMCl $ lift _ -< ()
+  counts <- constMCl $ lift look -< ()
   arrMCl $ liftIO . print -< counts
 
 main :: IO ()
@@ -116,5 +124,6 @@ main = do
           -- Our App monad is an instance of MonadIO.
           -- Have a look in https://hackage.haskell.org/package/rhine/docs/FRP-Rhine-Clock.html
           -- for a function that lifts waitClock to an arbitrary MonadIO.
-          allCounts @@ stdinWithEOF |@| printCounts @@ _ waitClock
+          -- allCounts @@ stdinWithEOF |@| printCounts @@ _ waitClock
+          allCounts @@ stdinWithEOF |@| printCounts @@ ioClock waitClock
   putStrLn $ "Final result: " ++ show result
