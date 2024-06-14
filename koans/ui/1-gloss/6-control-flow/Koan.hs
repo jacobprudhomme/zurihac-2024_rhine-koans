@@ -73,7 +73,7 @@ instance UniformRange Position where
 instance Random Position
 
 renderPosition :: Position -> Picture
-renderPosition Position {x, y} = translate (fromIntegral x) (fromIntegral y) $ circleSolid 0.6
+renderPosition Position{x, y} = translate (fromIntegral x) (fromIntegral y) $ circleSolid 0.6
 
 -- * Directions in which the snake can head
 
@@ -122,7 +122,7 @@ stepSnake turnMaybe eat snake =
     newDirection = maybe (direction snake) (`changeDirection` direction snake) turnMaybe
     newHead = stepPosition newDirection $ Data.List.NonEmpty.head $ body snake
     newTail = tailAfterMeal eat snake
-   in
+  in
     Snake
       { direction = newDirection
       , body = newHead :| newTail
@@ -158,7 +158,7 @@ addAndEatApple ::
 addAndEatApple addedApple eatPosition oldApples =
   let addedApples = maybe oldApples (`insert` oldApples) addedApple
       newApples = delete (Apple eatPosition) addedApples
-   in (newApples, if size newApples < size addedApples then Eat else DontEat)
+  in (newApples, if size newApples < size addedApples then Eat else DontEat)
 
 renderApple :: Apple -> Picture
 renderApple = color red . renderPosition . getApple
@@ -185,7 +185,7 @@ snakeAndApples = feedback DontEat $ proc (turn, eat) -> do
 
 -- | Whether a snake hits the boundaries or bites itself
 illegal :: Snake -> Bool
-illegal Snake {body = head_@Position {x, y} :| tail_} =
+illegal Snake{body = head_@Position{x, y} :| tail_} =
   head_ `elem` tail_
     || x < (-boardSize)
     || x > boardSize
@@ -195,7 +195,11 @@ illegal Snake {body = head_@Position {x, y} :| tail_} =
 -- | Play snake until the snake is in an illegal state
 game :: ClSF GlossConc GameClock (Maybe Turn) (Maybe (Snake, Apples))
 game = safely $ do
-  _
+  -- _
+  _ <- try $ liftClSF snakeAndApples
+    >>> throwOnCond (\(snake, _) -> illegal snake) ()
+    >>> arr Just
+  safe $ pure Nothing
 
 -- Have a look at https://hackage.haskell.org/package/rhine/docs/FRP-Rhine-ClSF-Except.html.
 -- We first want to play 'snakeAndApples' until the 'illegal' function returns 'True' on the current snake.
@@ -235,8 +239,8 @@ userClock =
     SelectClock
       { mainClock = GlossEventClockIO
       , select = \case
-          (EventKey (SpecialKey KeyRight) Down _ _) -> Just TurnRight
-          (EventKey (SpecialKey KeyLeft) Down _ _) -> Just TurnLeft
+          EventKey (SpecialKey KeyRight) Down _ _ -> Just TurnRight
+          EventKey (SpecialKey KeyLeft) Down _ _  -> Just TurnLeft
           _ -> Nothing
       }
 
@@ -245,7 +249,11 @@ user :: ClSF GlossConc UserClock () Turn
 user = tagS
 
 rhine :: Rhine GlossConc (UserClock `SequentialClock` (GameClock `SequentialClock` VisualizationClock)) () ()
-rhine = user @@ userClock >-- fifoBounded 1000 --> (game >-> arr render @@ gameClock) >-- keepLast mempty --> visualize @@ visualizationClock
+rhine = user @@ userClock
+  >-- fifoBounded 1000
+  --> (game >-> arr render @@ gameClock)
+    >-- keepLast mempty
+    --> visualize @@ visualizationClock
 
 main :: IO ()
 -- Make sure to keep this definition here as it is: The tests depend on it.
