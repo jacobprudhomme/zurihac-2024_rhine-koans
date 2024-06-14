@@ -30,7 +30,8 @@ rhine :: Rhine GlossConc GlossSimClockIO () ()
 -- Can you create a solid circle of radius 10 here?
 -- Have a look at https://hackage.haskell.org/package/gloss/docs/Graphics-Gloss-Data-Picture.html for inspiration.
 rhine =
-  constMCl (paintAllIO _) -- paintAllIO clears the drawing canvas and draws the given image
+  -- constMCl (paintAllIO _) -- paintAllIO clears the drawing canvas and draws the given image
+  constMCl (paintAllIO $ thickCircle 5 10)
     @@ GlossSimClockIO -- The singleton value of GlossSimClockIO.
 
 main :: IO ()
