@@ -26,6 +26,9 @@ Have a look at https://hackage.haskell.org/package/rhine/docs/FRP-Rhine-Clock.ht
 -}
 module Koan where
 
+-- base
+import GHC.Float (double2Float)
+
 -- rhine
 import FRP.Rhine
 
@@ -41,7 +44,8 @@ Its type signature ensures that it will be run on the 'GameClock'.
 movingCircle :: ClSF GlossConc GameClock () Picture
 -- The cryptic type error wants to tell us that the time since clock initialisation is in Double, but gloss expects a Float!
 -- Can you convert one to the other?
-movingCircle = sinceInitS >-> arr (\t -> translate 0 (10 * t) $ circleSolid 10) -- realToFrac works as well!
+-- movingCircle = sinceInitS >-> arr (\t -> translate 0 (10 * t) $ circleSolid 10) -- realToFrac works as well!
+movingCircle = sinceInitS >-> arr (\t -> translate 0 (10 * double2Float t) $ circleSolid 10)
 
 -- | A clock that ticks at every round of the game.
 type GameClock =
@@ -49,11 +53,13 @@ type GameClock =
   -- while the gloss backend expects a particular monad, 'GlossConc' or 'GlossConcT'.
   -- Luckily there is also a utility to lift any 'IO' clock to it!
   -- Have a look at https://hackage.haskell.org/package/rhine-gloss/docs/FRP-Rhine-Gloss-IO.html.
-  _ (Millisecond 500)
+  -- _ (Millisecond 500)
+  GlossConcClock (Millisecond 500)
 
 gameClock :: GameClock
 -- The clock type lifting function from above also has a corresponding value level function!
-gameClock = _ waitClock
+-- gameClock = _ waitClock
+gameClock = glossConcClock waitClock
 
 -- * Visualization
 
@@ -67,17 +73,20 @@ type VisualizationClock =
   -- but we want to use UTCTime instead!
   -- Again, in https://hackage.haskell.org/package/rhine-gloss/docs/FRP-Rhine-Gloss-IO.html
   -- you will find a type operator that rescales a gloss clock to UTC.
-  _ _ GlossSimClockIO
+  -- _ _ GlossSimClockIO
+  GlossClockUTC IO GlossSimClockIO
 
 visualizationClock :: VisualizationClock
-visualizationClock = _ GlossSimClockIO
+-- visualizationClock = _ GlossSimClockIO
+visualizationClock = glossClockUTC GlossSimClockIO
 
 rhine :: Rhine GlossConc (GameClock `SequentialClock` VisualizationClock) () ()
 -- Find the right resampling buffer to transport the rendered image from the game clock to the visualization clock.
 -- It should have two properties:
 -- 1. It should always output the newest image.
 -- 2. At startup, before the first round of the game has started, a blank image should be displayed.
-rhine = movingCircle @@ gameClock >-- _ blank --> visualize @@ visualizationClock
+-- rhine = movingCircle @@ gameClock >-- _ blank --> visualize @@ visualizationClock
+rhine = movingCircle @@ gameClock >-- keepLast blank --> visualize @@ visualizationClock
 
 main :: IO ()
 -- Make sure to keep this definition here as it is: The tests depend on it.
