@@ -34,7 +34,7 @@ instance Monoid Position where
   mempty = Position 0 0
 
 renderPosition :: Position -> Picture
-renderPosition Position {x, y} = translate (fromIntegral x) (fromIntegral y) $ circleSolid 0.6
+renderPosition Position{x, y} = translate (fromIntegral x) (fromIntegral y) $ circleSolid 0.6
 
 -- | Directions in which the snake can head
 data Direction = East | North | West | South
@@ -70,7 +70,10 @@ userClock =
         -- Have a look at https://hackage.haskell.org/package/gloss/docs/Graphics-Gloss-Interface-IO-Interact.html#t:Event.
         -- All other events should be mapped to Nothing.
         select = \case
-          _ -> _
+          -- _ -> _
+          EventKey (SpecialKey KeyLeft) Down _ _  -> Just TurnLeft
+          EventKey (SpecialKey KeyRight) Down _ _ -> Just TurnRight
+          _ -> Nothing
           -- Hint: The important bits are KeyLeft and KeyRight!
       }
 
@@ -95,9 +98,12 @@ game :: ClSF GlossConc GameClock (Maybe Turn) Position
 -- unfold takes a starting state and a step function to create a signal function.
 game = unfold (mempty, North) $ \turnMaybe (position, direction) ->
   -- Use helper functions defined above to calculate the new position and direction!
-  let newDirection = _
-      newPosition = _
-   in Result _ _
+  -- let newDirection = _
+  --     newPosition = _
+  --  in Result _ _
+  let newDirection = maybe direction (`changeDirection` direction) turnMaybe
+      newPosition = stepPosition newDirection position
+  in Result (newPosition, newDirection) newPosition
 
 -- * Visualization
 
@@ -122,8 +128,8 @@ rhine =
     >-- fifoBounded 1000
     --> (game >-> arr renderPosition @@ gameClock)
       >-- keepLast mempty
-    --> visualize
-      @@ visualizationClock
+      --> visualize
+        @@ visualizationClock
 
 main :: IO ()
 -- Make sure to keep this definition here as it is: The tests depend on it.
