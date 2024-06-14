@@ -55,7 +55,7 @@ instance UniformRange Position where
 instance Random Position
 
 renderPosition :: Position -> Picture
-renderPosition Position {x, y} = translate (fromIntegral x) (fromIntegral y) $ circleSolid 0.6
+renderPosition Position{x, y} = translate (fromIntegral x) (fromIntegral y) $ circleSolid 0.6
 
 -- * Directions in which the snake can head
 
@@ -88,8 +88,8 @@ userClock =
     SelectClock
       { mainClock = GlossEventClockIO
       , select = \case
-          (EventKey (SpecialKey KeyRight) Down _ _) -> Just TurnRight
-          (EventKey (SpecialKey KeyLeft) Down _ _) -> Just TurnLeft
+          EventKey (SpecialKey KeyRight) Down _ _ -> Just TurnRight
+          EventKey (SpecialKey KeyLeft) Down _ _  -> Just TurnLeft
           _ -> Nothing
       }
 
@@ -129,7 +129,7 @@ stepSnake turnMaybe eat snake =
     newDirection = maybe (direction snake) (`changeDirection` direction snake) turnMaybe
     newHead = stepPosition newDirection $ Data.List.NonEmpty.head $ body snake
     newTail = tailAfterMeal eat snake
-   in
+  in
     Snake
       { direction = newDirection
       , body = newHead :| newTail
@@ -144,7 +144,7 @@ renderSnake = foldMap renderPosition . body
 
 -- ** Apples
 
-newtype Apple = Apple {getApple :: Position}
+newtype Apple = Apple{getApple :: Position}
   deriving (Eq, Ord)
 
 -- | Randomly generate a new apple every 10 steps, anywhere on the playing board.
@@ -155,7 +155,9 @@ newApple = proc _ -> do
     then -- Create a new random position for an apple, within a given range.
     -- See https://hackage.haskell.org/package/rhine/docs/FRP-Rhine-ClSF-Random.html
     -- and keep in mind that RandT gives an instance of MonadRandom.
-      arr (Just <<< Apple) <<< _ -< (Position (-boardSize) (-boardSize), Position boardSize boardSize)
+      -- arr (Just <<< Apple) <<< _ -< (Position (-boardSize) (-boardSize), Position boardSize boardSize)
+      arr (Just <<< Apple) <<< getRandomRS
+        -< (Position (-boardSize) (-boardSize), Position boardSize boardSize)
     else returnA -< Nothing
 
 type Apples = Set Apple
@@ -171,7 +173,7 @@ addAndEatApple ::
 addAndEatApple addedApple eatPosition oldApples =
   let addedApples = maybe oldApples (`insert` oldApples) addedApple
       newApples = delete (Apple eatPosition) addedApples
-   in (newApples, if size newApples < size addedApples then Eat else DontEat)
+  in (newApples, if size newApples < size addedApples then Eat else DontEat)
 
 renderApple :: Apple -> Picture
 renderApple = color red . renderPosition . getApple
@@ -198,7 +200,8 @@ applesSF = feedback empty $ proc (eatPosition, oldApples) -> do
   -- But it's not in the GlossConc monad!
   -- Have a look again at https://hackage.haskell.org/package/rhine/docs/FRP-Rhine-ClSF-Random.html
   -- to find a way to run newApple in GlossConc by interpreting the RandT monad transformer.
-  addedApple <- _ -< ()
+  -- addedApple <- _ -< ()
+  addedApple <- evalRandIOS' newApple  -< ()
   let (newApples, eat) = addAndEatApple addedApple eatPosition oldApples
   returnA -< ((newApples, eat), newApples)
 
@@ -208,7 +211,11 @@ game :: ClSF GlossConc GameClock (Maybe Turn) (Snake, Apples)
 -- Each needs input from the other.
 -- snakeSF needs to know whether an apple was eaten in the last round,
 -- and applesSF needs to know where the head of the snake is now.
-game = _
+-- game = _
+game = feedback DontEat $ proc shouldEat -> do
+  s@Snake{body} <- snakeSF -< shouldEat
+  (newApples, nextShouldEat) <- applesSF -< Data.List.NonEmpty.head body
+  returnA -< ((s, newApples), nextShouldEat)
 
 -- Hint 1: Have a look back at the koan basic-2-4-count-all-the-words!
 -- Hint 2: Save the information of whether an apple is currently being eaten as internal state,
@@ -240,8 +247,8 @@ rhine =
     >-- fifoBounded 1000
     --> (game >-> arr render @@ gameClock)
       >-- keepLast mempty
-    --> visualize
-      @@ visualizationClock
+      --> visualize
+        @@ visualizationClock
 
 main :: IO ()
 -- Make sure to keep this definition here as it is: The tests depend on it.
